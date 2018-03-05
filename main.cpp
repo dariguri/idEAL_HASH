@@ -10,55 +10,88 @@
 #include <algorithm>
 #include <time.h>
 #include <vector>
+#include <list>
 using namespace std;
 int hash_function(int a,int b ,int p,int m,int x){//first level
     int hash=((a*x+b) % p) % m;
     return hash;
 }
+struct perfect_hash_table{
+private:
+    vector <vector <int >>ideal_table;//create ideal table
+    vector<int>prmtr1;//parametr a for the second level fo rthe ideal table
+    vector<int>prmtr2;//parametr a for the second level fo rthe ideal table
+    int a, b, p = 107, m;
+    vector <list <int > >hash_table;
+    
+    void first_level_hash(vector<int> & value, int cnt){//function that calculate elements hash on the first level
+        a=rand() % (p-1) +1;
+        b=rand() % p;
+        m=cnt;
+        for(int i=0;i<m;i++){
+            int hash = hash_function(a,b,p,m,value[i]);//find hash of initial values
+            hash_table[hash].push_back(value[i]);
+            
+        }
+    }
+    void second_level_hash(){//function that calculate elements hash on the second level
+        for(int i=0;i<m;i++){
+            prmtr1[i]=rand() % (p-1) +1;
+            prmtr2[i]=rand() % p;
+            int size=(int)hash_table[i].size();
+            ideal_table[i].assign(size*size,-1);
+        }
+        
+        for(int i=0;i<m;i++){
+            for(auto value: hash_table[i]){
+                int second_level_hash=hash_function(prmtr1[i], prmtr2[i], p, ideal_table.size(), value);
+                ideal_table[i][second_level_hash]=value;
+            }
+            hash_table[i].clear();
+        }
+    }
+public:
+    perfect_hash_table(vector<int> & value, int m){
+        ideal_table.resize(m);
+        prmtr1.resize(m);
+        prmtr2.resize(m);
+        hash_table.resize(m);
+        
+        first_level_hash(value, m);
+        second_level_hash();
+    }
+    
+    bool search(int key){
+        int first_level=hash_function(a,b,p,m,key);
+        int second_level=hash_function(prmtr1[first_level], prmtr2[first_level], p, ideal_table.size(), key);
+        return (ideal_table[first_level].size() && ideal_table[first_level][second_level]==key);
+            
+    }
+    
+};
+
 
 int main(int argc, const char * argv[]) {
     
     int a,b,p=107,m=100;
     srand(time( 0 ));
-    a=rand() % (p-1) +1;
-    b=rand() % p;
+    
     cin>>m;
     vector <int> value(m);//values that will be hashed
-    vector <vector <int >>hash_table(m) ;//create hash table
+    
     for(int i=0;i<m;i++){
         cin>>value[i];
     }
-    for(int i=0;i<m;i++){
-        
-        int hash = hash_function(a,b,p,m,value[i]);//find hash of initial values
-        hash_table[hash].push_back(value[i]);
-        
-    }
-    vector <vector <int >>ideal_table(m);//create ideal table
-    vector<int>prmtr1(m);//parametr a for the second level fo rthe ideal table
-    vector<int>prmtr2(m);//parametr a for the second level fo rthe ideal table
- 
-    for(int i=0;i<m;i++){
-        prmtr1[i]=rand() % (p-1) +1;
-        prmtr2[i]=rand() % p;
-        int size=(int)hash_table[i].size();
-        ideal_table[i].assign(size*size,-1);
-    }
+    
   
-    for(int i=0;i<m;i++){
-        int first_level_hash=hash_function(a,b,p,m,value[i]);
-        int second_level_hash=hash_function(prmtr1[first_level_hash], prmtr2[first_level_hash], p, ideal_table.size(), value[i]);
-        ideal_table[first_level_hash][second_level_hash]=value[i];
-    }
+    perfect_hash_table table(value, m);
     
     int k;
     cin>>k;
     for(int i=0;i<k;i++){
         int number;
         cin>>number;
-        int first_level_hash=hash_function(a,b,p,m,number);
-        int second_level_hash=hash_function(prmtr1[first_level_hash], prmtr2[first_level_hash], p, ideal_table.size(), number);
-        if(ideal_table[first_level_hash].size() && ideal_table[first_level_hash][second_level_hash]==number){
+        if(table.search(number)){
             cout<<"yes ,you found";
         }
         else{
